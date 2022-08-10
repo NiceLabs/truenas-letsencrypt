@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Set
+from typing import Set, List
 from urllib.parse import urljoin
 import os
 
@@ -39,14 +39,23 @@ class TrueNASCertificateClient:
             response.raise_for_status()
         return response.json()
 
-    def list(self, limit: int = 0):
-        response = self.session.get(self.api("certificate"), params={"limit": limit})
+    def get(self, certificate_id: int):
+        response = self.session.get(self.api(f"certificate/id/{certificate_id}"))
         if not response.ok:
             response.raise_for_status()
         return response.json()
 
     def delete(self, certificate_id: int):
         response = self.session.delete(self.api(f"certificate/id/{certificate_id}"))
+        if not response.ok:
+            response.raise_for_status()
+        return response.json()
+
+    def has(self, certificate_id: int):
+        return self.session.get(self.api(f"certificate/id/{certificate_id}")).ok
+
+    def list(self, limit: int = 0):
+        response = self.session.get(self.api("certificate"), params={"limit": limit})
         if not response.ok:
             response.raise_for_status()
         return response.json()
@@ -58,6 +67,7 @@ class TrueNASCertificateClient:
         return response.json().get("ui_certificate")
 
     def set_ui_certificate_id(self, certificate_id: int):
+        self.get(certificate_id)
         response = self.session.put(
             self.api("system/general"),
             data={"ui_certificate": certificate_id},
@@ -73,6 +83,7 @@ class TrueNASCertificateClient:
         return response.json().get("certificate")
 
     def set_service_certificate_id(self, service_name: str, certificate_id: int):
+        self.get(certificate_id)
         if service_name == "console":
             service_name = "system/general"
         response = self.session.put(
